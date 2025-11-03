@@ -33,32 +33,30 @@ using Microsoft.CodeAnalysis.Text;
 namespace Roslyn
 {
     [Generator]
-    public class EnumNameLookupGenerator : IIncrementalGenerator
+    public class EnumNameLookupGenerator : ISourceGenerator
     {
-        public void Initialize(IncrementalGeneratorInitializationContext context)
+        public void Initialize(GeneratorInitializationContext context)
+        {
+        }
+        
+        public void Execute(GeneratorExecutionContext context)
         {
             // Collect all enum declarations
-            var enumDeclarations = context.SyntaxProvider
+            var enumDeclarations = context.
                 .CreateSyntaxProvider(
                     predicate: (s, _) => s is EnumDeclarationSyntax,
-                    transform: (ctx, _) => (EnumDeclarationSyntax)ctx.Node)
+                    transform: (ctx, _) =>
+                    {
+                        var enumSyntax = (EnumDeclarationSyntax)ctx.Node;
+                        var enumSymbol = ctx.SemanticModel.GetDeclaredSymbol(enumSyntax);
+                        bool hasAttribute = enumSymbol?
+                            .GetAttributes()
+                            .Any(attr => attr.AttributeClass?.Name == "EnumLookupAttribute"
+                                         || attr.AttributeClass?.ToDisplayString() == "EnumLookupGenerator.EnumLookupAttribute") == true;
+
+                        return hasAttribute ? enumSyntax : null;
+                    })
                 .Where(m => m != null);
-            
-            // 2) SemanticModel로 Attribute 있는 enum만 선택
-            var enumWithAttributes = enumDeclarations
-                .Select((enumSyntax) =>
-                {
-                    var semanticModel = context.SemanticModel;
-                    var enumSymbol = semanticModel.GetDeclaredSymbol(enumSyntax);
-
-                    bool hasAttribute = enumSymbol?
-                        .GetAttributes()
-                        .Any(attr => attr.AttributeClass?.Name == "EnumLookupAttribute"
-                                     || attr.AttributeClass?.ToDisplayString() == "EnumLookupGenerator.EnumLookupAttribute") == true;
-
-                    return hasAttribute ? enumSymbol : null;
-                })
-                .Where(symbol => symbol != null);
             
 
             // Combine with compilation to get semantic model info
@@ -94,7 +92,7 @@ namespace Roslyn
         private static string GetHintNameFor(INamedTypeSymbol enumSymbol)
         {
             // Create a unique file name per enum full name
-            var ns = enumSymbol.ContainingNamespace.ToDisplayString().Replace('.', '_');
+            var ns = enumSymbol.ContainingNamespace.IsGlobalNamespace ? "global" : enumSymbol.ContainingNamespace.ToDisplayString().Replace('.', '_');
             var name = enumSymbol.Name;
             return $"EnumNameLookup_{ns}_{name}.g.cs";
         }
@@ -103,7 +101,7 @@ namespace Roslyn
         {
             var sb = new StringBuilder();
 
-            var ns = enumSymbol.ContainingNamespace.IsGlobalNamespace ? null : enumSymbol.ContainingNamespace.ToDisplayString();
+            var ns = enumSymbol.ContainingNamespace.IsGlobalNamespace? null : enumSymbol.ContainingNamespace.ToDisplayString();
             if (ns != null)
             {
                 sb.AppendLine("namespace " + ns);
@@ -115,7 +113,7 @@ namespace Roslyn
             var enumName = enumSymbol.Name;
 
             // Generate safe class name
-            var helperClassName = enumName + "_NameLookup";
+            var helperClassName = enumName + "_NameLookupExtensions";
 
             sb.AppendLine($"    {accessibility} static class {EscapeIdentifier(helperClassName)}");
             sb.AppendLine("    {");
@@ -125,18 +123,18 @@ namespace Roslyn
             var members = enumSymbol.GetMembers().OfType<IFieldSymbol>().Where(f => f.ConstantValue != null).ToArray();
 
             // Case-sensitive TryParse
-            sb.AppendLine($"        public static bool TryParseByName(string name, out {enumName} value)");
+            sb.AppendLine($"        public static {enumName} To{enumName}(string name)");
             sb.AppendLine("        {");
-            sb.AppendLine("            if (name is null) { value = default; return false; }");
+            sb.AppendLine("            if (name is null) { return default; }");
             sb.AppendLine("            switch (name)");
             sb.AppendLine("            {");
             foreach (var m in members)
             {
                 var memberName = m.Name;
                 var memberValue = m.ConstantValue;
-                sb.AppendLine($"                case \"{EscapeString(memberName)}\": value = {enumName}.{memberName}; return true;");
+                sb.AppendLine($"                case \"{EscapeString(memberName)}\": return {enumName}.{memberName}; return true;");
             }
-            sb.AppendLine("                default: value = default; return false;");
+            sb.AppendLine("                default: return default;");
             sb.AppendLine("            }");
             sb.AppendLine("        }");
             sb.AppendLine();
@@ -202,48 +200,3 @@ namespace Roslyn
         }
     }
 }
-
-/*
--------------------------------------------------------------------------------------------
-Usage example (consumer project)
-
-// Suppose you have:
-namespace MyGame
-{
-    public enum ItemRarity
-    {
-        Common,
-        Uncommon,
-        Rare,
-        Epic
-    }
-}
-
-// After adding the generator, a helper will be generated: MyGame.ItemRarity_NameLookup
-// Use it like:
-
-using MyGame;
-
-class Example
-{
-    void Test()
-    {
-        if (ItemRarity_NameLookup.TryParseByName("Rare", out var r))
-        {
-            // r == ItemRarity.Rare
-        }
-
-        if (ItemRarity_NameLookup.TryParseByNameIgnoreCase("epic", out var e))
-        {
-            // e == ItemRarity.Epic
-        }
-    }
-}
-
--------------------------------------------------------------------------------------------
-Notes & Improvements
-- Duplicate names when lowercased: you may want to detect and emit a comment or handle conflicts.
-- You can emit a central generic helper instead of per-enum classes if desired.
-- Consider generating a fallback `TryParse` that accepts spaces/underscores or maps DisplayNameAttribute.
-- Unit tests: include Microsoft.CodeAnalysis.Testing to assert generator outputs.
-*/
