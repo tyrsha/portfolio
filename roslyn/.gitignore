@@ -1,0 +1,27 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio files
+.vs/
+*.suo
+*.user
+*.resharper
+*.DotSettings
+
+# NuGet packages
+packages/
+*.nupkg
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Publishing profiles
+*.pubxml.user
+
+# Other common ignores
+TestResults/
