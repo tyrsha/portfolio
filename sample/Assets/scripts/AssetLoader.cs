@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class AssetLoader
 {
-    public void LinqSample()
+    public void LinqWarningSample()
     {
         var list = new List<int> {1, 2, 3, 4};
         
@@ -19,8 +19,6 @@ public class AssetLoader
         foreach (var pair in catalog)
         {
             var assetCategory = pair.Key.ToAssetCategory();
-            
-            
         }
     }
 }
