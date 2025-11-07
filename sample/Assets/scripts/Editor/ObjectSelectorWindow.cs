@@ -1,23 +1,35 @@
 ﻿// Assets/Editor/ObjectSelectorWindow.cs
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.IMGUI.Controls;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 
-public class ObjectSelectorWindow : EditorWindow
+public partial class ObjectSelectorWindow : EditorWindow
 {
     private static List<GameObject> results;
-    private Vector2 scroll;
+    private static TreeViewState treeViewState;
+    private ObjectSelectorTreeView treeView;
 
     public static void Show(List<GameObject> objects)
     {
-        results = objects;
+        results = objects?.Where(o => o != null).Distinct().ToList() ?? new List<GameObject>();
+
+        if (treeViewState == null)
+        {
+            treeViewState = new TreeViewState();
+        }
+
         var window = GetWindow<ObjectSelectorWindow>("Object Selector");
+        window.InitializeTreeView();
         window.Show();
+        window.Repaint();
     }
 
     private void OnGUI()
     {
+        EnsureTreeView();
+
         if (results == null || results.Count == 0)
         {
             GUILayout.Label("No objects detected.");
@@ -26,36 +38,26 @@ public class ObjectSelectorWindow : EditorWindow
 
         GUILayout.Label("Select an object:", EditorStyles.boldLabel);
 
-        scroll = GUILayout.BeginScrollView(scroll);
-
-        foreach (var obj in results)
-        {
-            string hierarchyPath = BuildHierarchyPath(obj);
-
-            if (GUILayout.Button(hierarchyPath, GUILayout.Height(26)))
-            {
-                Selection.activeGameObject = obj;
-                EditorGUIUtility.PingObject(obj);
-            }
-        }
-
-        GUILayout.EndScrollView();
+        var rect = GUILayoutUtility.GetRect(0, 100000, 0, 100000);
+        treeView?.OnGUI(rect);
     }
 
-    /// <summary>
-    /// 부모까지 포함한 Hierarchy Path 생성
-    /// ex) "Canvas / Panel / Button"
-    /// </summary>
-    private static string BuildHierarchyPath(GameObject obj)
+    private void InitializeTreeView()
     {
-        StringBuilder sb = new StringBuilder(obj.name);
-        Transform t = obj.transform.parent;
+        EnsureTreeView();
+        treeView?.ReloadWith(results);
+    }
 
-        while (t != null)
+    private void EnsureTreeView()
+    {
+        if (treeViewState == null)
         {
-            sb.Insert(0, $"{t.name} / ");
-            t = t.parent;
+            treeViewState = new TreeViewState();
         }
-        return sb.ToString();
+
+        if (treeView == null)
+        {
+            treeView = new ObjectSelectorTreeView(treeViewState, results);
+        }
     }
 }

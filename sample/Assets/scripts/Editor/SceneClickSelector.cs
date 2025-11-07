@@ -27,9 +27,6 @@ public static class SceneClickSelector
 
             if (pickedObjects.Count > 0)
             {
-                Debug.Log($"겹친 오브젝트 {pickedObjects.Count}개: {string.Join(", ", pickedObjects.Select(s => s.name))}");
-
-                // 예: 첫 번째 오브젝트 선택
                 Selection.activeGameObject = pickedObjects[0];
             }
 
@@ -63,7 +60,6 @@ public static class SceneClickSelector
             // Prevent infinite loop if object cannot be ignored (this needs to be fixed so print an error)
             if (overlapping.Count > 0 && go == overlapping.Last())
             {
-                Debug.LogError($"GetAllOverlapping failed, could not ignore game object '{go}' when picking");
                 break;
             }
 
@@ -76,6 +72,7 @@ public static class SceneClickSelector
     
     private static void OpenSelector(List<GameObject> found)
     {
+        found.Reverse();
         ObjectSelectorWindow.Show(found);
     }
 }
