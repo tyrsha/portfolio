@@ -41,27 +41,41 @@ public static class SceneClickSelector
 
     private static void FindPickedObjects(SceneView sceneView, Event e, List<GameObject> output)
     {
-        Debug.Log($"mousePos: {e.mousePosition}");
-        Vector2 mousePos = e.mousePosition;
-
-        // SceneView 좌표계 → Screen 좌표계 변환
-        // mousePos.y = sceneView.camera.pixelHeight - mousePos.y;
-
-        // 클릭 근처 Rect 정의 (픽셀 단위, 겹침 포함)
-        Rect pickRect = new Rect(mousePos.x - 1, mousePos.y - 1, 2, 2);
-
-        // HandleUtility.PickRectObjects 사용 (겹친 모든 오브젝트 반환)
-        GameObject[] pickedObjects = HandleUtility.PickRectObjects(pickRect, false);
-
-        foreach (var obj in pickedObjects)
+        foreach (var go in GetAllOverlapping(e.mousePosition))
         {
-            output.Add(obj);
+            if (go != null)
+            {
+                output.Add(go);
+            }
+        }
+    }
+    
+    // Get an ordered list of all visually overlapping GameObjects at the screen position from top to bottom
+    internal static IEnumerable<GameObject> GetAllOverlapping(Vector2 position)
+    {
+        var overlapping = new List<GameObject>();
+        var ignore = new List<GameObject>();
+
+        while (true)
+        {
+            var go = HandleUtility.PickGameObject(position, false, ignore.ToArray(), null);
+            
+            // Prevent infinite loop if object cannot be ignored (this needs to be fixed so print an error)
+            if (overlapping.Count > 0 && go == overlapping.Last())
+            {
+                Debug.LogError($"GetAllOverlapping failed, could not ignore game object '{go}' when picking");
+                break;
+            }
+
+            overlapping.Add(go);
+            ignore.Add(go);
+
+            yield return go;
         }
     }
     
     private static void OpenSelector(List<GameObject> found)
     {
         ObjectSelectorWindow.Show(found);
-        Debug.Log($"Selector opened. Found: {found.Count} objects.");
     }
 }
