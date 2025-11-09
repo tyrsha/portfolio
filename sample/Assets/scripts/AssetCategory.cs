@@ -1,4 +1,4 @@
-using Roslyn;
+using RoslynCommon;
 
 [EnumLookup]
 public enum AssetCategory 
@@ -7,3 +7,15 @@ public enum AssetCategory
     Binary,
     Audio,
 }
+
+namespace Etc
+{
+    [EnumLookup]
+    public enum AssetHelper
+    {
+        Texture,
+        Binary,
+        Audio,
+    }
+}
+

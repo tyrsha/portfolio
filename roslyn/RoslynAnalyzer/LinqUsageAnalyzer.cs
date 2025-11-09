@@ -35,20 +35,6 @@ namespace Roslyn
 
             // Register for invocation expressions to catch System.Linq extension method calls
             context.RegisterSyntaxNodeAction(AnalyzeInvocation, SyntaxKind.InvocationExpression);
-
-            // Register for query expressions (LINQ query syntax)
-            context.RegisterSyntaxNodeAction(AnalyzeQueryExpression, SyntaxKind.QueryExpression);
-        }
-
-        private static void AnalyzeQueryExpression(SyntaxNodeAnalysisContext context)
-        {
-            var query = (QueryExpressionSyntax)context.Node;
-
-            // If we can, report the diagnostics on the start token of the query expression
-            var location = query.FromClause?.GetLocation() ?? query.GetLocation();
-
-            var diag = Diagnostic.Create(Rule, location, "query expression");
-            context.ReportDiagnostic(diag);
         }
 
         private static void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
@@ -77,34 +63,13 @@ namespace Roslyn
             // Example full namespace: System.Linq
             var nsName = ns.ToDisplayString();
 
-            if (nsName == "System.Linq" || nsName.StartsWith("System.Linq."))
-            {
-                // Build a friendly name for the invoked expression
-                var invokedText = invocation.Expression?.ToString() ?? methodSymbol.Name;
-                var location = invocation.GetLocation();
-                var diag = Diagnostic.Create(Rule, location, invokedText);
-                context.ReportDiagnostic(diag);
-                return;
-            }
-
-            // Additionally detect some common LINQ-like methods implemented in other namespaces,
-            // e.g., Enumerable.* extension methods can sometimes be referenced via using alias or other paths.
-            // A more robust check: check if original definition's containing type is System.Linq.Enumerable
-
-            var original = methodSymbol.OriginalDefinition;
-            var containingType = original?.ContainingType;
-            if (containingType != null)
-            {
-                var typeFullName = containingType.ToDisplayString();
-                if (typeFullName == "System.Linq.Enumerable" || typeFullName.StartsWith("System.Linq."))
-                {
-                    var invokedText = invocation.Expression?.ToString() ?? methodSymbol.Name;
-                    var location = invocation.GetLocation();
-                    var diag = Diagnostic.Create(Rule, location, invokedText);
-                    context.ReportDiagnostic(diag);
-                    return;
-                }
-            }
+            if (nsName != "System.Linq" && !nsName.StartsWith("System.Linq.")) return;
+            
+            // Build a friendly name for the invoked expression
+            var invokedText = invocation.Expression?.ToString() ?? methodSymbol.Name;
+            var location = invocation.GetLocation();
+            var diag = Diagnostic.Create(Rule, location, invokedText);
+            context.ReportDiagnostic(diag);
         }
     }
 }

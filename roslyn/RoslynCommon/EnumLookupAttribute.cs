@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Roslyn
+namespace RoslynCommon
 {
     [AttributeUsage(AttributeTargets.Enum)]
     public class EnumLookupAttribute : Attribute

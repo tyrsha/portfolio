@@ -1,6 +1,6 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using EnumLookup.Generated; 
 using UnityEngine;
 
 public class AssetLoader
@@ -14,11 +14,12 @@ public class AssetLoader
             .ForEach(x => Debug.Log(x));
     }
     
-    public void LoadAssets(Dictionary<string, string> catalog)
+    public void EnumLookupSample(Dictionary<string, string> catalog)  
     {
         foreach (var pair in catalog)
         {
-            var assetCategory = pair.Key.ToAssetCategory();
+            var assetCategory = pair.Key.ToAssetHelper(); 
+            var assetHelper = pair.Key.ToAssetHelper();  
         }
     }
 }

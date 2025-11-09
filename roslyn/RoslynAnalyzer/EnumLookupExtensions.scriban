@@ -1,0 +1,27 @@
+// 🔥 이 파일이 생성될 최종 C# 코드 형태를 담당함
+using System.Collections.Generic;
+{{- if namespace != "" }}
+using {{ namespace }};
+{{- end }}
+
+namespace EnumLookup.Generated
+{
+    public static class {{ enum_name }}Extensions
+    {
+        private static Dictionary<string, {{ enum_name }}> dict = new() 
+        {
+            {{- for item in members }}
+            {"{{ item.key }}", {{ item.value }}},
+            {{- end }}
+        }; 
+    
+        public static {{ enum_name }} To{{ enum_name }}(this string name)
+        {
+            if (dict.TryGetValue(name, out var value))
+            {
+                return value;
+            }
+            return default;
+        }
+    }
+}

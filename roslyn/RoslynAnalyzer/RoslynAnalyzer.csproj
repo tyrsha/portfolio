@@ -7,6 +7,7 @@
         <LangVersion>9</LangVersion>    
         <OutputItemType>Analyzer</OutputItemType>
         <IncludeBuildOutput>false</IncludeBuildOutput>
+        <RunPostBuildEvent>Always</RunPostBuildEvent>
     </PropertyGroup>
 
     <ItemGroup>
@@ -14,8 +15,13 @@
       <PackageReference Include="Scriban" Version="6.5.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Remove="EnumLookupExtensions.scriban" />
+      <EmbeddedResource Include="EnumLookupExtensions.scriban" />
+    </ItemGroup>
+    
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <Exec Command="copy bin\Debug\netstandard2.0\roslyn.dll ..\..\sample\Assets\roslyn" />
+      <Exec Command="copy bin\Debug\netstandard2.0\RoslynAnalyzer.dll ..\..\sample\Assets\roslyn" />
     </Target>
 
 </Project>
