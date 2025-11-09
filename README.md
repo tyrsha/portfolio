@@ -147,11 +147,6 @@ dotnet build roslyn.sln
 2. **Unity 재컴파일**: Unity가 스크립트를 다시 컴파일할 때까지 기다립니다.
 3. **IDE 확인**: Visual Studio나 Rider에서도 Analyzer가 작동하는지 확인합니다.
 
-## 빌드 오류가 발생하는 경우
-1. **.NET SDK 확인**: `.NET Standard 2.0`을 지원하는 .NET SDK가 설치되어 있는지 확인합니다.
-2. **NuGet 패키지 복원**: `dotnet restore` 명령어로 NuGet 패키지를 복원합니다.
-3. **빌드 순서**: `RoslynCommon`을 먼저 빌드한 후 `RoslynAnalyzer`를 빌드합니다.
-
 # 추가 정보
 
 ## 디버깅 및 로깅
